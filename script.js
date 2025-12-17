@@ -14,30 +14,27 @@ function addTask() {
   const taskText = taskInput.value.trim();
   if (taskText === "") return;
 
-  let displayText = taskText;
   let deadline = null;
   if (deadlineInput.value) {
     deadline = new Date(deadlineInput.value);
-    displayText += " (Deadline: " + deadline.toLocaleString() + ")";
   }
 
-  // Create li for ALL TASKS
-  const liAll = document.createElement("li");
-  liAll.textContent = displayText;
+  const displayText = taskText + (deadline ? " (Deadline: " + deadline.toLocaleString() + ")" : "");
+
+  // Add to ALL TASKS
+  const liAll = createTaskElement(displayText, deadline);
   document.querySelector("#all ul").appendChild(liAll);
 
-  // Create li for chosen section
-  const liSection = document.createElement("li");
-  liSection.textContent = displayText;
+  // Add to chosen section
+  const liSection = createTaskElement(displayText, deadline);
   document.querySelector(`#${sectionSelect.value} ul`).appendChild(liSection);
 
-  // If deadline is within 24 hours, add to Upcoming Deadlines
+  // If deadline is within 24 hours → Upcoming Deadlines
   if (deadline) {
     const now = new Date();
     const diff = deadline - now;
     if (diff > 0 && diff <= 24 * 60 * 60 * 1000) {
-      const liUpcoming = document.createElement("li");
-      liUpcoming.textContent = displayText;
+      const liUpcoming = createTaskElement(displayText, deadline);
       document.querySelector("#upcoming ul").appendChild(liUpcoming);
     }
   }
@@ -47,22 +44,7 @@ function addTask() {
   deadlineInput.value = "";
 }
 
-function showSection(sectionId) {
-  const sections = document.querySelectorAll(".task-section");
-  sections.forEach(sec => sec.style.display = "none");
-
-  const target = document.getElementById(sectionId);
-  target.style.display = "block";
-
-  // If no tasks
-  const ulElements = target.querySelectorAll("ul");
-  ulElements.forEach(ul => {
-    if (ul.children.length === 0) {
-      ul.innerHTML = `<p class="no-tasks">No tasks here ✨</p>`;
-    }
-  });
-}
-function createTaskElement(text) {
+function createTaskElement(text, deadline) {
   const li = document.createElement("li");
   const span = document.createElement("span");
   span.textContent = text;
@@ -72,26 +54,21 @@ function createTaskElement(text) {
   finishBtn.textContent = "✅";
   finishBtn.onclick = () => {
     span.style.textDecoration = "line-through";
-    // Hide delete initially
-    deleteBtn.style.display = "none";
+    li.dataset.completed = "true";
   };
 
-  // Delete button (hidden by default)
-  const deleteBtn = document.createElement("button");
-  deleteBtn.textContent = "❌";
-  deleteBtn.style.display = "none";
-  deleteBtn.onclick = () => li.remove();
-
-  // Double click to reveal delete
-  li.ondblclick = () => {
-    if (span.style.textDecoration === "line-through") {
-      deleteBtn.style.display = "inline-block";
-    }
-  };
-
-  li.appendChild(span);
-  li.appendChild(finishBtn);
-  li.appendChild(deleteBtn);
-
-  return li;
-}
+  // Check deadline expiry every minute
+  if (deadline) {
+    const checkDeadline = setInterval(() => {
+      const now = new Date();
+      if (now >= deadline) {
+        clearInterval(checkDeadline);
+        if (li.dataset.completed === "true") {
+          if (confirm("Deadline passed. Task marked complete. Do you want to delete it?")) {
+            li.remove();
+          }
+        } else {
+          if (confirm("Deadline passed. Task not completed. Do you want to delete it?")) {
+            li.remove();
+          } else if (confirm("Do you want to change the deadline?")) {
+            const newDeadline = prompt("Enter new deadline (YYYY-MM-DD HH:MM
