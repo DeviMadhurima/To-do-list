@@ -25,7 +25,5 @@ Designed with a clean light‑yellow theme and professional fonts to showcase bo
 
 ---
 
-## 🚀 Getting Started
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/yourusername/smart-todo-dashboard.git
+
+   
